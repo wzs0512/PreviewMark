@@ -1,23 +1,41 @@
 # PreviewMark
 
-PreviewMark 是一个面向 Windows Insider 预览版的轻量水印开关。它只修改当前 Explorer 进程中 `shell32.dll` 的一条内存指令，不改写系统文件、注册表或启动项。退出并重新启动 Explorer、注销或重启 Windows 后，内存修改会自动消失。
+**PreviewMark 1.0** 是 Windows Insider 桌面构建水印的轻量、可逆开关。它只修改当前 Explorer 会话中的内存；重启 Explorer、注销或重启 Windows 后自动恢复。
 
-本工具不处理“激活 Windows”水印，也不更改 Windows 授权状态。
+[![Release](https://img.shields.io/badge/PreviewMark-v1.0-246FDB)](https://github.com/wzs0512/PreviewMark/releases/tag/v1.0.0)
+![Platform](https://img.shields.io/badge/Windows-x64-0078D4)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2E8B57.svg)](LICENSE)
+
+**快速下载：** [图形界面版](https://github.com/wzs0512/PreviewMark/releases/download/v1.0.0/PreviewMark.exe) · [命令行版](https://github.com/wzs0512/PreviewMark/releases/download/v1.0.0/PreviewMark.Cli.exe) · [SHA-256 校验值](https://github.com/wzs0512/PreviewMark/releases/download/v1.0.0/SHA256SUMS.txt) · [全部发行文件](https://github.com/wzs0512/PreviewMark/releases/tag/v1.0.0)
+
+![PreviewMark 1.0 界面](docs/previewmark-1.0.png)
 
 ## 使用
 
-运行 `release/PreviewMark.exe`，先点“检查”，确认当前构建能被唯一识别，再点“隐藏本次水印”。同一窗口中的“恢复”会还原本次会话保存的原始字节。
+1. 从 [v1.0 发行页](https://github.com/wzs0512/PreviewMark/releases/tag/v1.0.0) 下载 `PreviewMark.exe`。
+2. 打开程序。它会先检查当前 Windows 构建；检查不会修改系统。
+3. 点击“隐藏本次水印”。要重新显示时，点击“恢复原状”。
 
-命令行版本提供相同功能：
+隐藏只作用于当前 Explorer 会话。Explorer 重启、注销或重启 Windows 后，补丁会自动消失。
+
+## 命令行
 
 ```powershell
-.\release\PreviewMark.Cli.exe --scan
-.\release\PreviewMark.Cli.exe --self-check
-.\release\PreviewMark.Cli.exe --apply
-.\release\PreviewMark.Cli.exe --restore
+.\PreviewMark.Cli.exe --version
+.\PreviewMark.Cli.exe --scan
+.\PreviewMark.Cli.exe --self-check
+.\PreviewMark.Cli.exe --apply
+.\PreviewMark.Cli.exe --restore
 ```
 
-`--scan` 只读取系统 DLL；`--self-check` 只测试临时分配内存中的写入和恢复，不触碰 Explorer。工具只支持 x64 Windows。扫描不唯一、构建不匹配或 Explorer 中的 DLL 与磁盘版本不一致时，工具会停止。
+`--scan` 只读取系统 DLL。`--self-check` 只测试临时分配内存中的写入和恢复，不修改 Explorer。扫描结果不唯一或构建不匹配时，程序会停止。
+
+## 适用范围
+
+- Windows x64 Insider 预览版桌面构建水印
+- 不处理“激活 Windows”提示，也不改变 Windows 授权状态
+- 不改写系统文件、注册表或开机启动项
+- 仅在 Insider 水印绘制结构兼容的构建上工作；Windows 更新可能改变绘制实现
 
 ## 构建
 
@@ -27,15 +45,9 @@ PreviewMark 是一个面向 Windows Insider 预览版的轻量水印开关。它
 .\Build.ps1
 ```
 
-构建依赖 Windows 自带的 .NET Framework C# 编译器和 WinForms，不需要下载包。
+构建使用 Windows 自带的 .NET Framework C# 编译器与 WinForms，不需要额外下载包。
 
-## 限制
+## 致谢
 
-- 水印隐藏仅持续到当前 Explorer 进程退出。Explorer 更新或重启后需要重新运行。
-- 仅在 Windows Insider 预览水印上验证。Windows 更新可能改变水印绘制实现，使扫描失败；失败时工具会停止，不会尝试猜测地址。
-- 隐藏后若桌面没有立即重绘，可按 `F5` 刷新桌面。
-- 程序会在 `%LOCALAPPDATA%\PreviewMark\session.ini` 保存当前进程 ID、目标 RVA 和一个原始字节，供“恢复”使用；恢复成功或确认 Explorer 已重启后会删除该记录。
+目标定位思路参考了 [UWD3](https://github.com/jcnnik/uwd3) 的公开说明。PreviewMark 使用独立的 C# 实现；第三方许可信息见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-## 参考
-
-目标识别思路参考了 [UWD3](https://github.com/jcnnik/uwd3)：在 `shell32.dll` 中定位预览水印绘制函数，并只对 Explorer 当前进程应用可逆的内存补丁。PreviewMark 采用独立的 C# 实现；UWD3 项目以 MIT License 发布，出处和许可信息见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

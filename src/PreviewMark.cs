@@ -3,9 +3,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
+
+[assembly: AssemblyTitle("PreviewMark")]
+[assembly: AssemblyDescription("A reversible Windows Insider desktop watermark toggle")]
+[assembly: AssemblyCompany("PreviewMark contributors")]
+[assembly: AssemblyProduct("PreviewMark")]
+[assembly: AssemblyCopyright("Copyright © PreviewMark contributors")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
 
 namespace PreviewMark
 {
@@ -19,6 +28,11 @@ namespace PreviewMark
                 try
                 {
                     string action = args[0].Trim().ToLowerInvariant();
+                    if (action == "--version")
+                    {
+                        Console.WriteLine("PreviewMark 1.0.0");
+                        return 0;
+                    }
                     if (action == "--scan")
                     {
                         ScanResult scan = WatermarkEngine.Scan();
@@ -41,7 +55,7 @@ namespace PreviewMark
                         Console.WriteLine(WatermarkEngine.SelfCheck());
                         return 0;
                     }
-                    Console.Error.WriteLine("Usage: PreviewMark.Cli.exe [--scan | --self-check | --apply | --restore]");
+                    Console.Error.WriteLine("Usage: PreviewMark.Cli.exe [--version | --scan | --self-check | --apply | --restore]");
                     return 2;
                 }
                 catch (Exception ex)
@@ -61,75 +75,218 @@ namespace PreviewMark
     internal sealed class MainForm : Form
     {
         private readonly Label status;
+        private readonly Label statusTitle;
+        private readonly Panel statusDot;
         private readonly Button scanButton;
         private readonly Button applyButton;
         private readonly Button restoreButton;
 
         internal MainForm()
         {
-            Text = "PreviewMark · 预览版水印开关";
+            Text = "PreviewMark · Windows Insider 水印开关";
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = true;
-            ClientSize = new Size(570, 330);
-            Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            ClientSize = new Size(760, 610);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+            BackColor = Color.FromArgb(244, 247, 251);
+
+            TableLayoutPanel layout = new TableLayoutPanel();
+            layout.Dock = DockStyle.Fill;
+            layout.ColumnCount = 1;
+            layout.RowCount = 3;
+            layout.Margin = new Padding(0);
+            layout.Padding = new Padding(0);
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 118F));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 78F));
+            Controls.Add(layout);
+
+            Panel header = new Panel();
+            header.Dock = DockStyle.Fill;
+            header.BackColor = Color.FromArgb(24, 43, 66);
+            layout.Controls.Add(header, 0, 0);
 
             Label title = new Label();
-            title.Text = "Windows 预览版桌面水印";
-            title.Font = new Font(Font.FontFamily, 16F, FontStyle.Bold, GraphicsUnit.Point);
-            title.Location = new Point(26, 22);
-            title.Size = new Size(510, 34);
-            Controls.Add(title);
+            title.Text = "PreviewMark";
+            title.ForeColor = Color.White;
+            title.Font = new Font("Segoe UI", 23F, FontStyle.Bold, GraphicsUnit.Point);
+            title.Location = new Point(30, 19);
+            title.Size = new Size(360, 39);
+            header.Controls.Add(title);
 
-            Label description = new Label();
-            description.Text = "只处理 Insider 预览版的桌面构建水印。设置仅在当前 Explorer 会话内生效，重启 Explorer 或注销后自动恢复。";
-            description.Location = new Point(28, 69);
-            description.Size = new Size(510, 48);
-            Controls.Add(description);
+            Label subtitle = new Label();
+            subtitle.Text = "Windows Insider 桌面水印开关";
+            subtitle.ForeColor = Color.FromArgb(202, 216, 232);
+            subtitle.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+            subtitle.Location = new Point(33, 67);
+            subtitle.Size = new Size(420, 22);
+            header.Controls.Add(subtitle);
+
+            Label version = new Label();
+            version.Text = "VERSION  1.0";
+            version.TextAlign = ContentAlignment.MiddleCenter;
+            version.ForeColor = Color.FromArgb(221, 234, 248);
+            version.BackColor = Color.FromArgb(43, 67, 95);
+            version.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point);
+            version.Size = new Size(112, 28);
+            version.Location = new Point(616, 28);
+            version.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            header.Controls.Add(version);
+
+            Panel content = new Panel();
+            content.Dock = DockStyle.Fill;
+            content.BackColor = Color.FromArgb(244, 247, 251);
+            layout.Controls.Add(content, 0, 1);
+
+            Label deviceHeading = new Label();
+            deviceHeading.Text = "此设备";
+            deviceHeading.ForeColor = Color.FromArgb(43, 57, 73);
+            deviceHeading.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            deviceHeading.Location = new Point(26, 18);
+            deviceHeading.Size = new Size(160, 24);
+            content.Controls.Add(deviceHeading);
+
+            Panel deviceCard = new Panel();
+            deviceCard.BackColor = Color.White;
+            deviceCard.BorderStyle = BorderStyle.FixedSingle;
+            deviceCard.Location = new Point(24, 48);
+            deviceCard.Size = new Size(712, 88);
+            deviceCard.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            content.Controls.Add(deviceCard);
+
+            Label deviceCaption = new Label();
+            deviceCaption.Text = "WINDOWS  ·  X64";
+            deviceCaption.ForeColor = Color.FromArgb(103, 119, 137);
+            deviceCaption.Font = new Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point);
+            deviceCaption.Location = new Point(17, 12);
+            deviceCaption.Size = new Size(200, 18);
+            deviceCard.Controls.Add(deviceCaption);
 
             Label build = new Label();
-            build.Text = "当前系统：" + WindowsInfo.Build;
-            build.Location = new Point(28, 127);
-            build.Size = new Size(510, 24);
-            Controls.Add(build);
+            build.Text = WindowsInfo.Build;
+            build.ForeColor = Color.FromArgb(37, 52, 69);
+            build.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+            build.Location = new Point(17, 37);
+            build.Size = new Size(670, 28);
+            build.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            build.AutoEllipsis = true;
+            deviceCard.Controls.Add(build);
+
+            Panel statusCard = new Panel();
+            statusCard.BackColor = Color.White;
+            statusCard.BorderStyle = BorderStyle.FixedSingle;
+            statusCard.Location = new Point(24, 154);
+            statusCard.Size = new Size(712, 103);
+            statusCard.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            content.Controls.Add(statusCard);
+
+            statusDot = new Panel();
+            statusDot.BackColor = Color.FromArgb(142, 157, 174);
+            statusDot.Location = new Point(18, 20);
+            statusDot.Size = new Size(10, 10);
+            statusCard.Controls.Add(statusDot);
+
+            statusTitle = new Label();
+            statusTitle.Text = "等待检查";
+            statusTitle.ForeColor = Color.FromArgb(43, 57, 73);
+            statusTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+            statusTitle.Location = new Point(38, 15);
+            statusTitle.Size = new Size(620, 23);
+            statusTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            statusCard.Controls.Add(statusTitle);
 
             status = new Label();
-            status.BorderStyle = BorderStyle.FixedSingle;
-            status.BackColor = SystemColors.ControlLightLight;
-            status.Location = new Point(28, 160);
-            status.Size = new Size(510, 70);
-            status.Padding = new Padding(9);
-            status.Text = "尚未检查。点击“检查”确认此系统版本是否受支持。";
-            Controls.Add(status);
+            status.Text = "点击“检查版本”读取当前 Windows 构建。检查不会更改系统。";
+            status.ForeColor = Color.FromArgb(94, 109, 126);
+            status.Location = new Point(18, 47);
+            status.Size = new Size(670, 42);
+            status.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            status.AutoEllipsis = true;
+            statusCard.Controls.Add(status);
 
-            scanButton = new Button();
-            scanButton.Text = "检查";
-            scanButton.Location = new Point(28, 246);
-            scanButton.Size = new Size(108, 36);
+            scanButton = CreateButton("检查版本", Color.White, Color.FromArgb(50, 67, 86), Color.FromArgb(202, 212, 223));
+            scanButton.Location = new Point(24, 282);
+            scanButton.Size = new Size(190, 50);
+            scanButton.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
             scanButton.Click += delegate { RunAction("scan"); };
-            Controls.Add(scanButton);
+            content.Controls.Add(scanButton);
 
-            applyButton = new Button();
-            applyButton.Text = "隐藏本次水印";
-            applyButton.Location = new Point(151, 246);
-            applyButton.Size = new Size(150, 36);
+            applyButton = CreateButton("隐藏本次水印", Color.FromArgb(32, 111, 218), Color.White, Color.FromArgb(32, 111, 218));
+            applyButton.Location = new Point(227, 282);
+            applyButton.Size = new Size(268, 50);
+            applyButton.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             applyButton.Click += delegate { RunAction("apply"); };
-            Controls.Add(applyButton);
+            content.Controls.Add(applyButton);
 
-            restoreButton = new Button();
-            restoreButton.Text = "恢复";
-            restoreButton.Location = new Point(316, 246);
-            restoreButton.Size = new Size(108, 36);
+            restoreButton = CreateButton("恢复原状", Color.White, Color.FromArgb(50, 67, 86), Color.FromArgb(202, 212, 223));
+            restoreButton.Location = new Point(508, 282);
+            restoreButton.Size = new Size(228, 50);
+            restoreButton.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
             restoreButton.Click += delegate { RunAction("restore"); };
-            Controls.Add(restoreButton);
+            content.Controls.Add(restoreButton);
 
-            Label footer = new Label();
-            footer.Text = "不处理“激活 Windows”提示；不修改系统文件或设置开机任务。";
-            footer.ForeColor = SystemColors.GrayText;
-            footer.Location = new Point(28, 294);
-            footer.Size = new Size(510, 22);
-            Controls.Add(footer);
+            Label actionHint = new Label();
+            actionHint.Text = "水印隐藏只对当前 Explorer 会话生效。";
+            actionHint.ForeColor = Color.FromArgb(103, 119, 137);
+            actionHint.Location = new Point(26, 346);
+            actionHint.Size = new Size(520, 22);
+            actionHint.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
+            content.Controls.Add(actionHint);
+
+            Panel footer = new Panel();
+            footer.Dock = DockStyle.Fill;
+            footer.BackColor = Color.FromArgb(235, 240, 246);
+            layout.Controls.Add(footer, 0, 2);
+
+            Label footerText = new Label();
+            footerText.Text = "不修改系统文件、注册表或启动项；不处理“激活 Windows”提示。\r\n重启 Explorer、注销或重启 Windows 后自动恢复。";
+            footerText.ForeColor = Color.FromArgb(91, 107, 125);
+            footerText.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            footerText.Location = new Point(28, 17);
+            footerText.Size = new Size(500, 44);
+            footer.Controls.Add(footerText);
+
+            LinkLabel projectLink = new LinkLabel();
+            projectLink.Text = "GitHub 项目";
+            projectLink.LinkColor = Color.FromArgb(32, 111, 218);
+            projectLink.ActiveLinkColor = Color.FromArgb(21, 82, 167);
+            projectLink.VisitedLinkColor = Color.FromArgb(32, 111, 218);
+            projectLink.Location = new Point(615, 28);
+            projectLink.Size = new Size(105, 22);
+            projectLink.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            projectLink.LinkClicked += delegate
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo("https://github.com/wzs0512/PreviewMark") { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.Message, "无法打开 GitHub", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            footer.Controls.Add(projectLink);
+
+            Shown += delegate { RunAction("scan"); };
+        }
+
+        private static Button CreateButton(string text, Color backColor, Color foreColor, Color borderColor)
+        {
+            Button button = new Button();
+            button.Text = text;
+            button.BackColor = backColor;
+            button.ForeColor = foreColor;
+            button.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderColor = borderColor;
+            button.FlatAppearance.BorderSize = backColor == Color.White ? 1 : 0;
+            button.Cursor = Cursors.Hand;
+            button.UseVisualStyleBackColor = false;
+            return button;
         }
 
         private void RunAction(string action)
@@ -137,28 +294,42 @@ namespace PreviewMark
             scanButton.Enabled = false;
             applyButton.Enabled = false;
             restoreButton.Enabled = false;
+            UseWaitCursor = true;
             try
             {
                 if (action == "scan")
                 {
                     ScanResult scan = WatermarkEngine.Scan();
-                    status.Text = String.Format("支持此系统构建。目标函数位于 shell32.dll + 0x{0:X}。\r\n检查不会更改系统。", scan.Rva);
+                    statusTitle.Text = "检查完成";
+                    statusTitle.ForeColor = Color.FromArgb(28, 123, 88);
+                    statusDot.BackColor = Color.FromArgb(28, 159, 112);
+                    status.Text = String.Format("检测到可识别的绘制函数（shell32.dll + 0x{0:X}）。检查没有更改系统。", scan.Rva);
                 }
                 else if (action == "apply")
                 {
                     status.Text = WatermarkEngine.Apply();
+                    statusTitle.Text = "已完成";
+                    statusTitle.ForeColor = Color.FromArgb(28, 123, 88);
+                    statusDot.BackColor = Color.FromArgb(28, 159, 112);
                 }
                 else
                 {
                     status.Text = WatermarkEngine.Restore();
+                    statusTitle.Text = "恢复操作完成";
+                    statusTitle.ForeColor = Color.FromArgb(43, 57, 73);
+                    statusDot.BackColor = Color.FromArgb(82, 122, 169);
                 }
             }
             catch (Exception ex)
             {
+                statusTitle.Text = "操作未完成";
+                statusTitle.ForeColor = Color.FromArgb(176, 73, 54);
+                statusDot.BackColor = Color.FromArgb(203, 84, 64);
                 status.Text = ex.Message;
             }
             finally
             {
+                UseWaitCursor = false;
                 scanButton.Enabled = true;
                 applyButton.Enabled = true;
                 restoreButton.Enabled = true;
@@ -217,6 +388,10 @@ namespace PreviewMark
                         string version = Convert.ToString(key.GetValue("DisplayVersion", ""));
                         string build = Convert.ToString(key.GetValue("CurrentBuild", ""));
                         string ubr = Convert.ToString(key.GetValue("UBR", ""));
+                        int buildNumber;
+                        if (Int32.TryParse(build, out buildNumber) && buildNumber >= 22000 &&
+                            name.StartsWith("Windows 10", StringComparison.OrdinalIgnoreCase))
+                            name = "Windows 11" + name.Substring("Windows 10".Length);
                         return String.Format("{0} {1} (build {2}.{3}, {4})", name, version, build, ubr,
                             Environment.Is64BitOperatingSystem ? "x64" : "x86");
                     }
@@ -941,3 +1116,4 @@ namespace PreviewMark
         internal static extern bool RedrawWindow(IntPtr window, IntPtr updateRectangle, IntPtr updateRegion, uint flags);
     }
 }
+
