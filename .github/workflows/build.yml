@@ -1,0 +1,19 @@
+name: Build Windows app
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build GUI and CLI
+        shell: pwsh
+        run: .\Build.ps1
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: PreviewMark-windows-x64
+          path: release/PreviewMark*.exe
